@@ -18,7 +18,7 @@ struct NotchRootView: View {
                         ))
                 } else {
                     ExpandedNotchHubView(viewModel: viewModel)
-                        .frame(width: 520, height: viewModel.isCameraMirrorOpen ? 340 : 215)
+                        .frame(width: 540, height: viewModel.isCameraMirrorOpen ? 340 : 215)
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .offset(y: -6)).animation(.easeOut(duration: 0.22).delay(0.06)),
                             removal: .opacity.animation(.easeIn(duration: 0.10))
@@ -76,7 +76,7 @@ struct ExpandedNotchHubView: View {
                 ))
         } else {
             VStack(spacing: 5) {
-                HStack(spacing: 6) {
+                HStack(spacing: 0) {
                     HStack(spacing: 4) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 9))
@@ -84,22 +84,12 @@ struct ExpandedNotchHubView: View {
                         Text("DynamicBox")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.white.opacity(0.85))
+                            .lineLimit(1)
+                            .fixedSize()
                     }
                     .padding(.leading, 2)
                     
-                    Spacer()
-                    
-                    Button(action: {
-                        viewModel.previousTab()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(viewModel.activeTab.index > 0 ? .white.opacity(0.75) : .white.opacity(0.2))
-                            .padding(4)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(viewModel.activeTab.index == 0)
-                    .help("Previous tab")
+                    Spacer(minLength: 8)
                     
                     HStack(spacing: 2) {
                         ForEach(NotchTab.allCases) { tab in
@@ -108,12 +98,14 @@ struct ExpandedNotchHubView: View {
                             }) {
                                 HStack(spacing: 3) {
                                     Image(systemName: tab.iconName)
-                                        .font(.system(size: 9))
+                                        .font(.system(size: 8.5))
                                     Text(tab.rawValue)
-                                        .font(.system(size: 10, weight: viewModel.activeTab == tab ? .bold : .medium))
+                                        .font(.system(size: 9.5, weight: viewModel.activeTab == tab ? .bold : .medium))
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
                                 }
                                 .foregroundColor(viewModel.activeTab == tab ? .white : .white.opacity(0.55))
-                                .padding(.horizontal, 7)
+                                .padding(.horizontal, 6)
                                 .padding(.vertical, 3.5)
                                 .background(
                                     Capsule().fill(viewModel.activeTab == tab ? Color.white.opacity(0.2) : Color.clear)
@@ -125,84 +117,74 @@ struct ExpandedNotchHubView: View {
                     .padding(2)
                     .background(Capsule().fill(Color.white.opacity(0.06)))
                     
-                    Button(action: {
-                        viewModel.nextTab()
-                    }) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(viewModel.activeTab.index < NotchTab.allCases.count - 1 ? .white.opacity(0.75) : .white.opacity(0.2))
-                            .padding(4)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(viewModel.activeTab.index >= NotchTab.allCases.count - 1)
-                    .help("Next tab")
+                    Spacer(minLength: 8)
                     
-                    Spacer()
-                    
-                    Button(action: {
-                        viewModel.toggleDND()
-                    }) {
-                        Image(systemName: viewModel.isDNDActive ? "moon.fill" : "moon")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundColor(viewModel.isDNDActive ? Color(red: 0.75, green: 0.55, blue: 1.0) : .white.opacity(0.55))
-                            .padding(4)
-                            .background(
-                                Circle().fill(viewModel.isDNDActive ? Color(red: 0.75, green: 0.55, blue: 1.0).opacity(0.25) : Color.white.opacity(0.08))
-                            )
+                    HStack(spacing: 5) {
+                        Button(action: {
+                            viewModel.toggleDND()
+                        }) {
+                            Image(systemName: viewModel.isDNDActive ? "moon.fill" : "moon")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundColor(viewModel.isDNDActive ? Color(red: 0.75, green: 0.55, blue: 1.0) : .white.opacity(0.55))
+                                .padding(4)
+                                .background(
+                                    Circle().fill(viewModel.isDNDActive ? Color(red: 0.75, green: 0.55, blue: 1.0).opacity(0.25) : Color.white.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(viewModel.isDNDActive ? "Не беспокоить: Включен (кликните для отключения)" : "Не беспокоить: Выключен (кликните для включения)")
+                        
+                        Button(action: {
+                            viewModel.toggleOuterPanel()
+                        }) {
+                            Image(systemName: viewModel.isOuterPanelHidden ? "eye.slash.fill" : "eye.fill")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundColor(viewModel.isOuterPanelHidden ? Color.orange : .white.opacity(0.55))
+                                .padding(4)
+                                .background(
+                                    Circle().fill(viewModel.isOuterPanelHidden ? Color.orange.opacity(0.25) : Color.white.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(viewModel.isOuterPanelHidden ? "Внешняя панелька скрыта (кликните, чтобы показать)" : "Скрыть внешнюю панельку за челку")
+                        
+                        Button(action: {
+                            viewModel.toggleCameraMirror()
+                        }) {
+                            Image(systemName: viewModel.isCameraMirrorOpen ? "camera.fill" : "camera")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundColor(viewModel.isCameraMirrorOpen ? Color.green : .white.opacity(0.55))
+                                .padding(4)
+                                .background(
+                                    Circle().fill(viewModel.isCameraMirrorOpen ? Color.green.opacity(0.25) : Color.white.opacity(0.08))
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(viewModel.isCameraMirrorOpen ? "Закрыть зеркало камеры" : "Быстрое зеркало / превью камеры")
+                        
+                        Button(action: {
+                            viewModel.toggleSettingsInline()
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(viewModel.showSettingsInline ? Color.cyan : .white.opacity(0.55))
+                                .padding(4)
+                                .background(Circle().fill(viewModel.showSettingsInline ? Color.cyan.opacity(0.2) : Color.white.opacity(0.08)))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Preferences inside Notch")
+                        
+                        Button(action: {
+                            viewModel.collapse(immediate: true)
+                        }) {
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white.opacity(0.55))
+                                .padding(4)
+                                .background(Circle().fill(Color.white.opacity(0.08)))
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(viewModel.isDNDActive ? "Не беспокоить: Включен (кликните для отключения)" : "Не беспокоить: Выключен (кликните для включения)")
-                    
-                    Button(action: {
-                        viewModel.toggleOuterPanel()
-                    }) {
-                        Image(systemName: viewModel.isOuterPanelHidden ? "eye.slash.fill" : "eye.fill")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundColor(viewModel.isOuterPanelHidden ? Color.orange : .white.opacity(0.55))
-                            .padding(4)
-                            .background(
-                                Circle().fill(viewModel.isOuterPanelHidden ? Color.orange.opacity(0.25) : Color.white.opacity(0.08))
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(viewModel.isOuterPanelHidden ? "Внешняя панелька скрыта (кликните, чтобы показать)" : "Скрыть внешнюю панельку за челку")
-                    
-                    Button(action: {
-                        viewModel.toggleCameraMirror()
-                    }) {
-                        Image(systemName: viewModel.isCameraMirrorOpen ? "camera.fill" : "camera")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundColor(viewModel.isCameraMirrorOpen ? Color.green : .white.opacity(0.55))
-                            .padding(4)
-                            .background(
-                                Circle().fill(viewModel.isCameraMirrorOpen ? Color.green.opacity(0.25) : Color.white.opacity(0.08))
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(viewModel.isCameraMirrorOpen ? "Закрыть зеркало камеры" : "Быстрое зеркало / превью камеры")
-                    
-                    Button(action: {
-                        viewModel.toggleSettingsInline()
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(viewModel.showSettingsInline ? Color.cyan : .white.opacity(0.55))
-                            .padding(4)
-                            .background(Circle().fill(viewModel.showSettingsInline ? Color.cyan.opacity(0.2) : Color.white.opacity(0.08)))
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help("Preferences inside Notch")
-                    
-                    Button(action: {
-                        viewModel.collapse(immediate: true)
-                    }) {
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white.opacity(0.55))
-                            .padding(4)
-                            .background(Circle().fill(Color.white.opacity(0.08)))
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, notchTopPadding)

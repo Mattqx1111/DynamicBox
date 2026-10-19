@@ -277,7 +277,7 @@ class NotchPanel: NSPanel {
                 }
             }
         } else {
-            let expandedWidth: CGFloat = 550
+            let expandedWidth: CGFloat = 540
             let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 235
             let isInsideExpanded = (mouseLoc.y >= topY - expandedHeight) &&
                                    (mouseLoc.y <= topY + 15) &&
@@ -560,7 +560,7 @@ class NotchPanel: NSPanel {
             targetX = notchLeft
         }
         
-        let expandedWidth: CGFloat = 520
+        let expandedWidth: CGFloat = 540
         let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 215
         
         let targetWidth = viewModel.isExpanded ? expandedWidth : compactWidth
