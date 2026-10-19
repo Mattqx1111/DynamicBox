@@ -8,6 +8,19 @@ Built with **100% native Swift, SwiftUI, and AppKit**, DynamicBox integrates sea
 
 ## ✨ Features
 
+- 📷 **Instant Camera Mirror**:
+  - One-click webcam mirror preview directly beneath the MacBook camera notch.
+  - Check your look and camera framing before Zoom, FaceTime, or Google Meet calls without opening heavy apps.
+  - Privacy-preserving: the camera feed shuts off immediately when closing the preview or collapsing the notch, turning the green LED off instantly.
+
+- ⚡ **Dynamic Battery & Charging Animation**:
+  - iOS-style Dynamic Island charging animation when connecting MagSafe or USB-C power.
+  - Shows an animated lightning badge, battery percentage, and charging state.
+
+- 📝 **Quick Notes (Scratchpad)**:
+  - Built-in scratchpad tab in the notch hub.
+  - Auto-saves instantly across reboots, with live word counter, one-click copy to clipboard, and quick clear.
+
 - 🎵 **Universal Media Island**:
   - Live now-playing status for **Apple Music**, **Spotify**, **YouTube**, **Netflix**, and any browser/system audio output.
   - Dynamic animated waveform with customizable colors (Orange Sunset, Cyber Cyan, Neon Green, Purple Pulse, Monochrome).

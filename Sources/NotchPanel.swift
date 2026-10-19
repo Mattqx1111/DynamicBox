@@ -278,7 +278,7 @@ class NotchPanel: NSPanel {
             }
         } else {
             let expandedWidth: CGFloat = 550
-            let expandedHeight: CGFloat = 235
+            let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 235
             let isInsideExpanded = (mouseLoc.y >= topY - expandedHeight) &&
                                    (mouseLoc.y <= topY + 15) &&
                                    (mouseLoc.x >= midX - expandedWidth / 2) &&
@@ -491,6 +491,24 @@ class NotchPanel: NSPanel {
                 }
             }
             .store(in: &cancellables)
+            
+        viewModel.$showChargingBanner
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                if self?.viewModel.isExpanded == false {
+                    self?.reposition(animated: true)
+                }
+            }
+            .store(in: &cancellables)
+            
+        viewModel.$isCameraMirrorOpen
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.reposition(animated: true)
+            }
+            .store(in: &cancellables)
     }
     
     func reposition(animated: Bool = true) {
@@ -509,15 +527,19 @@ class NotchPanel: NSPanel {
         let showMusic = !viewModel.isFullScreenActive && !viewModel.isOuterPanelHidden && viewModel.showMusicInNotch && (viewModel.currentTrack != nil) && (viewModel.currentTrack!.isPlaying || viewModel.keepMusicWhenPaused)
         let showTimer = !viewModel.isFullScreenActive && !viewModel.isOuterPanelHidden && viewModel.showTimerInNotch && viewModel.isTimerActive
         let showShelf = !viewModel.isFullScreenActive && !viewModel.isOuterPanelHidden && !viewModel.stashedFiles.isEmpty
-        let hasActiveContent = showMusic || showTimer || showShelf
+        let showCharging = !viewModel.isFullScreenActive && viewModel.showChargingBanner
+        let hasActiveContent = showMusic || showTimer || showShelf || showCharging
         
         let compactHeight: CGFloat = notchBaseHeight
         let compactWidth: CGFloat
         let targetX: CGFloat
         
-        if (viewModel.isFullScreenActive || viewModel.isOuterPanelHidden) && !viewModel.isExpanded {
+        if (viewModel.isFullScreenActive || viewModel.isOuterPanelHidden) && !viewModel.isExpanded && !showCharging {
             compactWidth = notchBaseWidth
             targetX = notchLeft
+        } else if showCharging && !viewModel.isExpanded {
+            compactWidth = notchBaseWidth + earWidth * 2.0
+            targetX = notchLeft - earWidth
         } else if hasActiveContent {
             switch viewModel.wingMode {
             case .symmetric:
@@ -539,7 +561,7 @@ class NotchPanel: NSPanel {
         }
         
         let expandedWidth: CGFloat = 520
-        let expandedHeight: CGFloat = 215
+        let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 215
         
         let targetWidth = viewModel.isExpanded ? expandedWidth : compactWidth
         let targetHeight = viewModel.isExpanded ? expandedHeight : compactHeight

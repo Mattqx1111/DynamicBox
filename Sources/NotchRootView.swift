@@ -18,7 +18,7 @@ struct NotchRootView: View {
                         ))
                 } else {
                     ExpandedNotchHubView(viewModel: viewModel)
-                        .frame(width: 520, height: 215)
+                        .frame(width: 520, height: viewModel.isCameraMirrorOpen ? 340 : 215)
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .offset(y: -6)).animation(.easeOut(duration: 0.22).delay(0.06)),
                             removal: .opacity.animation(.easeIn(duration: 0.10))
@@ -67,6 +67,13 @@ struct ExpandedNotchHubView: View {
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .trailing).combined(with: .opacity)
             ))
+        } else if viewModel.isCameraMirrorOpen {
+            CameraMirrorView(viewModel: viewModel)
+                .padding(.top, notchTopPadding)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                    removal: .opacity
+                ))
         } else {
             VStack(spacing: 5) {
                 HStack(spacing: 6) {
@@ -161,6 +168,20 @@ struct ExpandedNotchHubView: View {
                     .help(viewModel.isOuterPanelHidden ? "Внешняя панелька скрыта (кликните, чтобы показать)" : "Скрыть внешнюю панельку за челку")
                     
                     Button(action: {
+                        viewModel.toggleCameraMirror()
+                    }) {
+                        Image(systemName: viewModel.isCameraMirrorOpen ? "camera.fill" : "camera")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundColor(viewModel.isCameraMirrorOpen ? Color.green : .white.opacity(0.55))
+                            .padding(4)
+                            .background(
+                                Circle().fill(viewModel.isCameraMirrorOpen ? Color.green.opacity(0.25) : Color.white.opacity(0.08))
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help(viewModel.isCameraMirrorOpen ? "Закрыть зеркало камеры" : "Быстрое зеркало / превью камеры")
+                    
+                    Button(action: {
                         viewModel.toggleSettingsInline()
                     }) {
                         Image(systemName: "gearshape.fill")
@@ -200,6 +221,10 @@ struct ExpandedNotchHubView: View {
                         FileShelfView(viewModel: viewModel)
                             .transition(tabTransition)
                             .id(NotchTab.shelf)
+                    case .notes:
+                        NotesTabView(viewModel: viewModel)
+                            .transition(tabTransition)
+                            .id(NotchTab.notes)
                     case .clipboard:
                         ClipboardTabView(viewModel: viewModel)
                             .transition(tabTransition)
@@ -383,7 +408,41 @@ struct CompactNotchView: View {
     }
     
     var body: some View {
-        if showMusic || showTimer || showShelf {
+        if viewModel.showChargingBanner {
+            HStack(spacing: 0) {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
+                    Text("Зарядка")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .frame(width: 68, alignment: .leading)
+                .padding(.leading, 10)
+                
+                Spacer().frame(width: 174)
+                
+                HStack(spacing: 3) {
+                    Text("\(viewModel.batteryPercent)%")
+                        .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
+                    Image(systemName: viewModel.batteryPercent >= 90 ? "battery.100.bolt" : (viewModel.batteryPercent >= 50 ? "battery.75" : "battery.25"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
+                }
+                .frame(width: 68, alignment: .trailing)
+                .padding(.trailing, 10)
+            }
+            .contentShape(Rectangle())
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.92).combined(with: .opacity),
+                removal: .opacity
+            ))
+            .onTapGesture {
+                viewModel.expand()
+            }
+        } else if showMusic || showTimer || showShelf {
             Group {
                 switch viewModel.wingMode {
                 case .symmetric:

@@ -7,6 +7,7 @@ class NotchViewModel: ObservableObject {
     @Published var activeTab: NotchTab = .music
     @Published var slideDirection: SlideDirection = .forward
     @Published var showSettingsInline: Bool = false
+    @Published var isCameraMirrorOpen: Bool = false
     @Published var isFlushToTop: Bool = true
     @Published var isDragHovering: Bool = false
     @Published var dragHoverTarget: DragTarget = .none
@@ -42,6 +43,12 @@ class NotchViewModel: ObservableObject {
     @Published var timerPresetDuration: Int = 25 * 60
     
     @Published var isDNDActive: Bool = false
+    
+    @Published var batteryPercent: Int = 100
+    @Published var isCharging: Bool = false
+    @Published var isPluggedIn: Bool = false
+    @Published var showChargingBanner: Bool = false
+    private var chargingBannerWorkItem: DispatchWorkItem?
     
     var timerString: String {
         let m = timerSecondsRemaining / 60
@@ -100,6 +107,15 @@ class NotchViewModel: ObservableObject {
             }
         }
         
+        BatteryManager.shared.onChargerConnected = { [weak self] pct in
+            self?.triggerChargingBanner(percent: pct)
+        }
+        BatteryManager.shared.onBatteryUpdated = { [weak self] pct, isChg, isPlug in
+            self?.batteryPercent = pct
+            self?.isCharging = isChg
+            self?.isPluggedIn = isPlug
+        }
+        
         startTimers()
     }
     
@@ -108,6 +124,7 @@ class NotchViewModel: ObservableObject {
         equalizerTimer?.invalidate()
         clipboardTimer?.invalidate()
         pomodoroTimer?.invalidate()
+        chargingBannerWorkItem?.cancel()
     }
     
     private func startTimers() {
@@ -195,6 +212,44 @@ class NotchViewModel: ObservableObject {
         self.clipboardTimer = clipTimer
     }
     
+    func triggerChargingBanner(percent: Int) {
+        self.batteryPercent = percent
+        chargingBannerWorkItem?.cancel()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            self.showChargingBanner = true
+        }
+        NSSound(named: "Blow")?.play()
+        let item = DispatchWorkItem { [weak self] in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                self?.showChargingBanner = false
+            }
+        }
+        chargingBannerWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.2, execute: item)
+    }
+    
+    func openCameraMirror() {
+        showSettingsInline = false
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.85)) {
+            isCameraMirrorOpen = true
+        }
+    }
+    
+    func closeCameraMirror() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
+            isCameraMirrorOpen = false
+        }
+        CameraManager.shared.stop()
+    }
+    
+    func toggleCameraMirror() {
+        if isCameraMirrorOpen {
+            closeCameraMirror()
+        } else {
+            openCameraMirror()
+        }
+    }
+    
     func copyClipboardItem(_ item: ClipboardItem) {
         let pb = NSPasteboard.general
         pb.clearContents()
@@ -261,6 +316,7 @@ class NotchViewModel: ObservableObject {
     
     func selectTab(_ tab: NotchTab) {
         showSettingsInline = false
+        closeCameraMirror()
         guard tab != activeTab else { return }
         slideDirection = tab.index > activeTab.index ? .forward : .backward
         withAnimation(.spring(response: 0.30, dampingFraction: 0.85)) {
@@ -270,6 +326,7 @@ class NotchViewModel: ObservableObject {
     
     func nextTab() {
         showSettingsInline = false
+        closeCameraMirror()
         let all = NotchTab.allCases
         if let curIdx = all.firstIndex(of: activeTab), curIdx + 1 < all.count {
             selectTab(all[curIdx + 1])
@@ -278,6 +335,7 @@ class NotchViewModel: ObservableObject {
     
     func previousTab() {
         showSettingsInline = false
+        closeCameraMirror()
         let all = NotchTab.allCases
         if let curIdx = all.firstIndex(of: activeTab), curIdx > 0 {
             selectTab(all[curIdx - 1])
@@ -303,6 +361,7 @@ class NotchViewModel: ObservableObject {
     }
     
     func toggleSettingsInline() {
+        closeCameraMirror()
         withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
             showSettingsInline.toggle()
         }
@@ -334,6 +393,7 @@ class NotchViewModel: ObservableObject {
     }
     
     func collapse(immediate: Bool = false) {
+        closeCameraMirror()
         if immediate {
             cancelCollapseTimer()
             self.isMouseHovering = false

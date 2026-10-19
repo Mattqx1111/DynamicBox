@@ -116,6 +116,7 @@ enum SlideDirection: Equatable {
 enum NotchTab: String, CaseIterable, Identifiable {
     case music = "Music"
     case shelf = "Shelf"
+    case notes = "Notes"
     case clipboard = "Clipboard"
     case timer = "Timer"
     
@@ -125,8 +126,9 @@ enum NotchTab: String, CaseIterable, Identifiable {
         switch self {
         case .music: return 0
         case .shelf: return 1
-        case .clipboard: return 2
-        case .timer: return 3
+        case .notes: return 2
+        case .clipboard: return 3
+        case .timer: return 4
         }
     }
     
@@ -134,6 +136,7 @@ enum NotchTab: String, CaseIterable, Identifiable {
         switch self {
         case .music: return "music.note"
         case .shelf: return "folder.fill"
+        case .notes: return "note.text"
         case .clipboard: return "doc.on.clipboard.fill"
         case .timer: return "timer"
         }

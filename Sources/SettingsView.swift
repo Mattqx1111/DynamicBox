@@ -88,6 +88,22 @@ struct InlineSettingsView: View {
                             .foregroundColor(.white.opacity(0.85))
                     }
                     .toggleStyle(SwitchToggleStyle(tint: .cyan))
+                    
+                    Button(action: {
+                        viewModel.triggerChargingBanner(percent: viewModel.batteryPercent)
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 9))
+                            Text("Test Charging Animation")
+                                .font(.system(size: 9.5, weight: .medium))
+                        }
+                        .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(Color(red: 0.2, green: 0.9, blue: 0.4).opacity(0.15)))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 

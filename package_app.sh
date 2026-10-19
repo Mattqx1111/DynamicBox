@@ -20,7 +20,7 @@ for p in "${CANDIDATE_PATHS[@]}"; do
   fi
 done
 
-SWIFT_FLAGS=(-O -framework Cocoa -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon -framework AVFoundation)
+SWIFT_FLAGS=(-O -framework Cocoa -framework SwiftUI -framework UniformTypeIdentifiers -framework Carbon -framework AVFoundation -framework IOKit)
 if [ -n "$SWIFTUI_MACRO" ]; then
   SWIFT_FLAGS+=(-load-plugin-library "$SWIFTUI_MACRO")
 fi
@@ -71,6 +71,8 @@ cat << 'EOF' > "$APP_BUNDLE/Contents/Info.plist"
     <true/>
     <key>NSAppleEventsUsageDescription</key>
     <string>DynamicBox accesses media information to display currently playing music, video, and audio playback.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>DynamicBox uses the camera for instant mirror preview.</string>
 </dict>
 </plist>
 EOF
