@@ -5,11 +5,14 @@ struct NotchRootView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            if viewModel.isLiquidGlassEnabled {
-                NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+            if !viewModel.isExpanded {
+                NotchShape(cornerRadius: 10, isFlushToTop: viewModel.isFlushToTop)
+                    .fill(Color(red: 0, green: 0, blue: 0))
+            } else if viewModel.isLiquidGlassEnabled {
+                NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
                     .fill(.ultraThinMaterial)
                     .overlay(
-                        NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                        NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
                             .fill(
                                 LinearGradient(
                                     colors: [
@@ -22,7 +25,7 @@ struct NotchRootView: View {
                             )
                     )
                     .overlay(
-                        NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                        NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
                             .stroke(
                                 LinearGradient(
                                     colors: [
@@ -38,8 +41,8 @@ struct NotchRootView: View {
                     )
                     .shadow(color: Color.black.opacity(0.35), radius: 12, x: 0, y: 6)
             } else {
-                NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
-                    .fill(Color(red: 0, green: 0, blue: 0).opacity(viewModel.isExpanded ? 0.95 : 1.0))
+                NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
+                    .fill(Color(red: 0, green: 0, blue: 0).opacity(0.95))
             }
             
             ZStack(alignment: .top) {
