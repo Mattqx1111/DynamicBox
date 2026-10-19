@@ -5,8 +5,42 @@ struct NotchRootView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
-                .fill(Color(red: 0, green: 0, blue: 0).opacity(viewModel.isExpanded ? 0.95 : 1.0))
+            if viewModel.isLiquidGlassEnabled {
+                NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(white: 0.18, opacity: 0.50),
+                                        Color(white: 0.06, opacity: 0.72)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    )
+                    .overlay(
+                        NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.40),
+                                        Color.white.opacity(0.16),
+                                        Color.white.opacity(0.08)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.0
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.35), radius: 12, x: 0, y: 6)
+            } else {
+                NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                    .fill(Color(red: 0, green: 0, blue: 0).opacity(viewModel.isExpanded ? 0.95 : 1.0))
+            }
             
             ZStack(alignment: .top) {
                 if !viewModel.isExpanded {
@@ -18,7 +52,7 @@ struct NotchRootView: View {
                         ))
                 } else {
                     ExpandedNotchHubView(viewModel: viewModel)
-                        .frame(width: 540, height: viewModel.isCameraMirrorOpen ? 340 : 215)
+                        .frame(width: 540, height: viewModel.isCameraMirrorOpen ? 340 : (viewModel.showSettingsInline ? 260 : 220))
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .offset(y: -6)).animation(.easeOut(duration: 0.22).delay(0.06)),
                             removal: .opacity.animation(.easeIn(duration: 0.10))
@@ -397,15 +431,15 @@ struct CompactNotchView: View {
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
                     Text("Зарядка")
-                        .font(.system(size: 9.5, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.white)
                 }
-                .frame(width: 68, alignment: .leading)
-                .padding(.leading, 10)
+                .frame(width: 80, alignment: .leading)
+                .padding(.leading, 12)
                 
-                Spacer().frame(width: 174)
+                Spacer()
                 
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Text("\(viewModel.batteryPercent)%")
                         .font(.system(size: 10.5, weight: .bold, design: .rounded))
                         .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
@@ -413,9 +447,10 @@ struct CompactNotchView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(Color(red: 0.2, green: 0.9, blue: 0.4))
                 }
-                .frame(width: 68, alignment: .trailing)
-                .padding(.trailing, 10)
+                .frame(width: 80, alignment: .trailing)
+                .padding(.trailing, 12)
             }
+            .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .transition(.asymmetric(
                 insertion: .scale(scale: 0.92).combined(with: .opacity),

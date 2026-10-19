@@ -278,7 +278,7 @@ class NotchPanel: NSPanel {
             }
         } else {
             let expandedWidth: CGFloat = 540
-            let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 235
+            let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : (viewModel.showSettingsInline ? 260 : 220)
             let isInsideExpanded = (mouseLoc.y >= topY - expandedHeight) &&
                                    (mouseLoc.y <= topY + 15) &&
                                    (mouseLoc.x >= midX - expandedWidth / 2) &&
@@ -509,6 +509,24 @@ class NotchPanel: NSPanel {
                 self?.reposition(animated: true)
             }
             .store(in: &cancellables)
+            
+        viewModel.$showSettingsInline
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                if self?.viewModel.isExpanded == true {
+                    self?.reposition(animated: true)
+                }
+            }
+            .store(in: &cancellables)
+            
+        viewModel.$isLiquidGlassEnabled
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.reposition(animated: false)
+            }
+            .store(in: &cancellables)
     }
     
     func reposition(animated: Bool = true) {
@@ -523,6 +541,7 @@ class NotchPanel: NSPanel {
         let notchRight: CGFloat = screen.auxiliaryTopRightArea?.origin.x ?? (notchLeft + 180.0)
         let notchBaseWidth: CGFloat = notchRight - notchLeft
         let earWidth: CGFloat = 68.0
+        let chargingEarWidth: CGFloat = 84.0
         
         let showMusic = !viewModel.isFullScreenActive && !viewModel.isOuterPanelHidden && viewModel.showMusicInNotch && (viewModel.currentTrack != nil) && (viewModel.currentTrack!.isPlaying || viewModel.keepMusicWhenPaused)
         let showTimer = !viewModel.isFullScreenActive && !viewModel.isOuterPanelHidden && viewModel.showTimerInNotch && viewModel.isTimerActive
@@ -538,8 +557,8 @@ class NotchPanel: NSPanel {
             compactWidth = notchBaseWidth
             targetX = notchLeft
         } else if showCharging && !viewModel.isExpanded {
-            compactWidth = notchBaseWidth + earWidth * 2.0
-            targetX = notchLeft - earWidth
+            compactWidth = notchBaseWidth + chargingEarWidth * 2.0
+            targetX = notchLeft - chargingEarWidth
         } else if hasActiveContent {
             switch viewModel.wingMode {
             case .symmetric:
@@ -561,7 +580,7 @@ class NotchPanel: NSPanel {
         }
         
         let expandedWidth: CGFloat = 540
-        let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : 215
+        let expandedHeight: CGFloat = viewModel.isCameraMirrorOpen ? 340 : (viewModel.showSettingsInline ? 260 : 220)
         
         let targetWidth = viewModel.isExpanded ? expandedWidth : compactWidth
         let targetHeight = viewModel.isExpanded ? expandedHeight : compactHeight

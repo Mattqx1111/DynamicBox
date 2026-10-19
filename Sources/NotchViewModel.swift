@@ -29,6 +29,9 @@ class NotchViewModel: ObservableObject {
     @Published var isOuterPanelHidden: Bool = false {
         didSet { UserDefaults.standard.set(isOuterPanelHidden, forKey: "nb_outer_panel_hidden") }
     }
+    @Published var isLiquidGlassEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(isLiquidGlassEnabled, forKey: "nb_liquid_glass") }
+    }
     @Published var waveColor: WaveColor = .orange {
         didSet { UserDefaults.standard.set(waveColor.rawValue, forKey: "nb_wave_color") }
     }
@@ -76,6 +79,7 @@ class NotchViewModel: ObservableObject {
         self.keepMusicWhenPaused = UserDefaults.standard.object(forKey: "nb_keep_music_paused") as? Bool ?? true
         self.showTimerInNotch = UserDefaults.standard.object(forKey: "nb_show_timer_notch") as? Bool ?? true
         self.isOuterPanelHidden = UserDefaults.standard.bool(forKey: "nb_outer_panel_hidden")
+        self.isLiquidGlassEnabled = UserDefaults.standard.bool(forKey: "nb_liquid_glass")
         if let savedColor = UserDefaults.standard.string(forKey: "nb_wave_color"),
            let c = WaveColor(rawValue: savedColor) {
             self.waveColor = c
@@ -226,6 +230,14 @@ class NotchViewModel: ObservableObject {
         }
         chargingBannerWorkItem = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.2, execute: item)
+    }
+    
+    func testChargingAnimation() {
+        collapse(immediate: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            guard let self = self else { return }
+            self.triggerChargingBanner(percent: self.batteryPercent)
+        }
     }
     
     func openCameraMirror() {

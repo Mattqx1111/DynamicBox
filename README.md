@@ -21,6 +21,10 @@ Built with **100% native Swift, SwiftUI, and AppKit**, DynamicBox integrates sea
   - Built-in scratchpad tab in the notch hub.
   - Auto-saves instantly across reboots, with live word counter, one-click copy to clipboard, and quick clear.
 
+- 🔮 **Liquid Glass Material Effect**:
+  - Optional frosted liquid glass translucency with refractive specular border and background blur.
+  - Can be toggled on or off at any time in Preferences to switch between classic jet-black notch and modern Apple frosted glass aesthetic.
+
 - 🎵 **Universal Media Island**:
   - Live now-playing status for **Apple Music**, **Spotify**, **YouTube**, **Netflix**, and any browser/system audio output.
   - Dynamic animated waveform with customizable colors (Orange Sunset, Cyber Cyan, Neon Green, Purple Pulse, Monochrome).
