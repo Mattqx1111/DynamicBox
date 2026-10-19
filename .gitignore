@@ -1,0 +1,25 @@
+# Xcode & Swift
+.build/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# App Bundles & Binaries
+DynamicBox
+*.app
+*.dSYM
+*.dmg
+*.pkg
+
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Local Environment
+.env
+*.local
