@@ -42,11 +42,22 @@ struct MusicIslandView: View {
                 .frame(width: 56, height: 56)
                 
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Text(track.title)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
+                        
+                        Button(action: {
+                            viewModel.toggleLikeCurrentTrack()
+                        }) {
+                            Image(systemName: viewModel.isCurrentTrackLiked ? "heart.fill" : "heart")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(viewModel.isCurrentTrackLiked ? Color.red : Color.white.opacity(0.5))
+                                .scaleEffect(viewModel.isCurrentTrackLiked ? 1.15 : 1.0)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(viewModel.isCurrentTrackLiked ? "Убрать из понравившихся" : "Мне нравится")
                         
                         Spacer()
                         
@@ -131,8 +142,20 @@ struct MusicIslandView: View {
                     }
                     .padding(.top, 1)
                     
-                    HStack(spacing: 18) {
+                    HStack(spacing: 14) {
                         Spacer()
+                        
+                        Button(action: {
+                            viewModel.toggleLikeCurrentTrack()
+                        }) {
+                            Image(systemName: viewModel.isCurrentTrackLiked ? "heart.fill" : "heart")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(viewModel.isCurrentTrackLiked ? Color.red : Color.white.opacity(0.75))
+                                .frame(width: 24, height: 24)
+                                .background(Circle().fill(viewModel.isCurrentTrackLiked ? Color.red.opacity(0.18) : Color.white.opacity(0.07)))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(viewModel.isCurrentTrackLiked ? "Убрать из понравившихся" : "Мне нравится")
                         
                         Button(action: {
                             viewModel.seekTrackBy(seconds: -15)

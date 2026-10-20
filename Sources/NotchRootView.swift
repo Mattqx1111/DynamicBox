@@ -5,45 +5,8 @@ struct NotchRootView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            if !viewModel.isExpanded {
-                NotchShape(cornerRadius: 10, isFlushToTop: viewModel.isFlushToTop)
-                    .fill(Color(red: 0, green: 0, blue: 0))
-            } else if viewModel.isLiquidGlassEnabled {
-                NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(white: 0.18, opacity: 0.50),
-                                        Color(white: 0.06, opacity: 0.72)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    )
-                    .overlay(
-                        NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.40),
-                                        Color.white.opacity(0.16),
-                                        Color.white.opacity(0.08)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.0
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.35), radius: 12, x: 0, y: 6)
-            } else {
-                NotchShape(cornerRadius: 22, isFlushToTop: viewModel.isFlushToTop)
-                    .fill(Color(red: 0, green: 0, blue: 0).opacity(0.95))
-            }
+            NotchShape(cornerRadius: viewModel.isExpanded ? 22 : 10, isFlushToTop: viewModel.isFlushToTop)
+                .fill(Color(red: 0, green: 0, blue: 0).opacity(viewModel.isExpanded ? 0.95 : 1.0))
             
             ZStack(alignment: .top) {
                 if !viewModel.isExpanded {
@@ -346,8 +309,8 @@ struct CompactNotchView: View {
                 .foregroundColor(Color(red: 0.19, green: 0.82, blue: 0.35))
             }
         }
+        .padding(.leading, 8)
         .frame(width: 68, alignment: .leading)
-        .padding(.leading, 10)
     }
     
     @ViewBuilder
@@ -373,8 +336,8 @@ struct CompactNotchView: View {
                     .foregroundColor(.white.opacity(0.4))
             }
         }
+        .padding(.trailing, 8)
         .frame(width: 68, alignment: .trailing)
-        .padding(.trailing, 10)
     }
     
     @ViewBuilder
@@ -468,26 +431,26 @@ struct CompactNotchView: View {
                 case .symmetric:
                     HStack(spacing: 0) {
                         leftEarView
-                        Spacer().frame(width: 174)
+                        Spacer(minLength: 0)
                         rightEarView
                     }
                 case .rightOnly:
                     HStack(spacing: 0) {
-                        Spacer().frame(width: 174)
+                        Spacer(minLength: 0)
                         combinedSingleEarView
+                            .padding(.trailing, 8)
                             .frame(width: 68, alignment: .trailing)
-                            .padding(.trailing, 10)
                     }
                 case .leftOnly:
                     HStack(spacing: 0) {
                         combinedSingleEarView
+                            .padding(.leading, 8)
                             .frame(width: 68, alignment: .leading)
-                            .padding(.leading, 10)
-                        Spacer().frame(width: 174)
+                        Spacer(minLength: 0)
                     }
                 case .flush:
                     Color.clear
-                        .frame(width: 174, height: 32)
+                        .frame(height: 32)
                 }
             }
             .contentShape(Rectangle())

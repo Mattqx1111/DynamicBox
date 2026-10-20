@@ -214,7 +214,19 @@ class MediaController {
                     set tDur to (duration of current track as string)
                     set tPos to (player position as string)
                     set pState to (player state as string)
-                    return tName & "|||" & tArtist & "|||" & tAlbum & "|||" & tDur & "|||" & tPos & "|||" & pState
+                    set isFav to "false"
+                    try
+                        if favorited of current track is true then
+                            set isFav to "true"
+                        end if
+                    on error
+                        try
+                            if loved of current track is true then
+                                set isFav to "true"
+                            end if
+                        end try
+                    end try
+                    return tName & "|||" & tArtist & "|||" & tAlbum & "|||" & tDur & "|||" & tPos & "|||" & pState & "|||" & isFav
                 else
                     return "STOPPED"
                 end if
@@ -267,6 +279,8 @@ class MediaController {
         let stateStr = parts[5].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let isPlaying = (stateStr == "playing")
         
+        let isLiked = (parts.count >= 7 && parts[6].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "true")
+        
         let trackKey = "\(bundleID):\(title):\(artist)"
         let art: NSImage?
         if trackKey == cachedTrackKey && cachedArtwork != nil {
@@ -285,7 +299,8 @@ class MediaController {
             position: position,
             isPlaying: isPlaying,
             artwork: art,
-            playerApp: playerApp
+            playerApp: playerApp,
+            isLiked: isLiked
         )
     }
     
@@ -445,6 +460,24 @@ class MediaController {
         if let cur = getNowPlaying() {
             let newPos = max(0.0, min(cur.duration, cur.position + seconds))
             seek(to: newPos)
+        }
+    }
+    
+    func setLiked(_ liked: Bool) {
+        if isAppRunning("com.apple.Music") {
+            let val = liked ? "true" : "false"
+            let script = """
+            tell application id "com.apple.Music"
+                try
+                    set favorited of current track to \(val)
+                on error
+                    try
+                        set loved of current track to \(val)
+                    end try
+                end try
+            end tell
+            """
+            _ = executeAppleScript(script)
         }
     }
     

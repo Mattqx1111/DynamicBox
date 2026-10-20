@@ -29,9 +29,6 @@ class NotchViewModel: ObservableObject {
     @Published var isOuterPanelHidden: Bool = false {
         didSet { UserDefaults.standard.set(isOuterPanelHidden, forKey: "nb_outer_panel_hidden") }
     }
-    @Published var isLiquidGlassEnabled: Bool = false {
-        didSet { UserDefaults.standard.set(isLiquidGlassEnabled, forKey: "nb_liquid_glass") }
-    }
     @Published var waveColor: WaveColor = .orange {
         didSet { UserDefaults.standard.set(waveColor.rawValue, forKey: "nb_wave_color") }
     }
@@ -40,6 +37,13 @@ class NotchViewModel: ObservableObject {
     
     @Published var currentTrack: MusicTrackInfo? = nil
     @Published var equalizerHeights: [CGFloat] = [6, 12, 18, 10, 8]
+    @Published var likedTrackKeys: Set<String> = []
+    
+    var isCurrentTrackLiked: Bool {
+        guard let track = currentTrack else { return false }
+        let key = "\(track.artist) - \(track.title)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return likedTrackKeys.contains(key) || track.isLiked
+    }
     
     @Published var isTimerActive: Bool = false
     @Published var timerSecondsRemaining: Int = 25 * 60
@@ -79,7 +83,6 @@ class NotchViewModel: ObservableObject {
         self.keepMusicWhenPaused = UserDefaults.standard.object(forKey: "nb_keep_music_paused") as? Bool ?? true
         self.showTimerInNotch = UserDefaults.standard.object(forKey: "nb_show_timer_notch") as? Bool ?? true
         self.isOuterPanelHidden = UserDefaults.standard.bool(forKey: "nb_outer_panel_hidden")
-        self.isLiquidGlassEnabled = UserDefaults.standard.bool(forKey: "nb_liquid_glass")
         if let savedColor = UserDefaults.standard.string(forKey: "nb_wave_color"),
            let c = WaveColor(rawValue: savedColor) {
             self.waveColor = c
@@ -96,7 +99,22 @@ class NotchViewModel: ObservableObject {
         
         self.isDNDActive = UserDefaults.standard.bool(forKey: "nb_dnd_active")
         
-        self.currentTrack = MediaController.shared.getNowPlaying()
+        if let savedLikes = UserDefaults.standard.stringArray(forKey: "nb_liked_track_keys") {
+            self.likedTrackKeys = Set(savedLikes)
+        }
+        
+        var initialTrack = MediaController.shared.getNowPlaying()
+        if var track = initialTrack {
+            let key = "\(track.artist) - \(track.title)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if self.likedTrackKeys.contains(key) {
+                track.isLiked = true
+            } else if track.isLiked {
+                self.likedTrackKeys.insert(key)
+                UserDefaults.standard.set(Array(self.likedTrackKeys), forKey: "nb_liked_track_keys")
+            }
+            initialTrack = track
+        }
+        self.currentTrack = initialTrack
         if self.currentTrack != nil {
             self.activeTab = .music
         } else {
@@ -138,13 +156,18 @@ class NotchViewModel: ObservableObject {
                 let track = MediaController.shared.getNowPlaying()
                 DispatchQueue.main.async {
                     if let newTrack = track {
-                        if self.isScrubbingTrack, let existing = self.currentTrack {
-                            var updated = newTrack
-                            updated.position = existing.position
-                            self.currentTrack = updated
-                        } else {
-                            self.currentTrack = newTrack
+                        var updated = newTrack
+                        let key = "\(updated.artist) - \(updated.title)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                        if self.likedTrackKeys.contains(key) {
+                            updated.isLiked = true
+                        } else if updated.isLiked {
+                            self.likedTrackKeys.insert(key)
+                            UserDefaults.standard.set(Array(self.likedTrackKeys), forKey: "nb_liked_track_keys")
                         }
+                        if self.isScrubbingTrack, let existing = self.currentTrack {
+                            updated.position = existing.position
+                        }
+                        self.currentTrack = updated
                     } else {
                         self.currentTrack = nil
                     }
@@ -493,5 +516,25 @@ class NotchViewModel: ObservableObject {
         guard let track = currentTrack else { return }
         let newPos = max(0.0, min(track.duration, track.position + seconds))
         seekTrack(to: newPos)
+    }
+    
+    func toggleLikeCurrentTrack() {
+        guard let track = currentTrack else { return }
+        let key = "\(track.artist) - \(track.title)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let currentlyLiked = isCurrentTrackLiked
+        let newLiked = !currentlyLiked
+        
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+            if newLiked {
+                likedTrackKeys.insert(key)
+                currentTrack?.isLiked = true
+                NSSound(named: "Pop")?.play()
+            } else {
+                likedTrackKeys.remove(key)
+                currentTrack?.isLiked = false
+            }
+        }
+        UserDefaults.standard.set(Array(likedTrackKeys), forKey: "nb_liked_track_keys")
+        MediaController.shared.setLiked(newLiked)
     }
 }

@@ -48,6 +48,7 @@ struct MusicTrackInfo: Equatable {
     var isPlaying: Bool
     var artwork: NSImage?
     var playerApp: String
+    var isLiked: Bool = false
     
     static var sample: MusicTrackInfo {
         MusicTrackInfo(
@@ -58,7 +59,8 @@ struct MusicTrackInfo: Equatable {
             position: 35.0,
             isPlaying: true,
             artwork: nil,
-            playerApp: "Music"
+            playerApp: "Music",
+            isLiked: false
         )
     }
 }

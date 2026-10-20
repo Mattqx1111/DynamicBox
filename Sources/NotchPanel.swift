@@ -124,6 +124,9 @@ class NotchPanel: NSPanel {
     private var cancellables = Set<AnyCancellable>()
     private var hoverTimer: DispatchSourceTimer?
     private var periodicCheckTimer: Timer?
+    private var lastKnownLeftMenuMaxX: CGFloat = 0
+    private var lastKnownRightMenuMinX: CGFloat = 9999
+    private var hoverTickCount: Int = 0
     
     init(viewModel: NotchViewModel) {
         self.viewModel = viewModel
@@ -221,6 +224,11 @@ class NotchPanel: NSPanel {
     private func checkHoverState() {
         guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main else { return }
         
+        hoverTickCount += 1
+        if hoverTickCount % 5 == 0 {
+            updateFullScreenAndWingMode(on: screen)
+        }
+        
         if !self.isVisible || !self.occlusionState.contains(.visible) {
             if viewModel.isExpanded {
                 viewModel.collapse(immediate: true)
@@ -305,21 +313,20 @@ class NotchPanel: NSPanel {
         if let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] {
             for w in windowList {
                 guard let layer = w[kCGWindowLayer as String] as? Int, layer == 25 else { continue }
-                guard let bounds = w[kCGWindowBounds as String] as? [String: Any],
-                      let x = bounds["X"] as? CGFloat,
-                      let wW = bounds["Width"] as? CGFloat,
-                      let y = bounds["Y"] as? CGFloat,
-                      let h = bounds["Height"] as? CGFloat else { continue }
-                if y <= 10 && h <= 40 && x > screenFrame.width / 2 && wW > 0 && wW < screenFrame.width * 0.8 {
-                    statusItemsMinX = min(statusItemsMinX, x)
+                if let boundsDict = w[kCGWindowBounds as String] as? NSDictionary,
+                   let rect = CGRect(dictionaryRepresentation: boundsDict) {
+                    if rect.origin.y <= 10 && rect.size.height <= 40 && rect.origin.x > screenFrame.width / 2 && rect.size.width > 0 && rect.size.width < screenFrame.width * 0.8 {
+                        statusItemsMinX = min(statusItemsMinX, rect.origin.x)
+                    }
                 }
             }
         }
         
-        var leftMenuMaxX: CGFloat = 0
-        var rightMenuMinX: CGFloat = screenFrame.width
+        var leftMenuMaxX: CGFloat = lastKnownLeftMenuMaxX
+        var rightMenuMinX: CGFloat = min(statusItemsMinX, lastKnownRightMenuMinX)
         
-        if let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier != "com.dynamicbox.app" {
+        let app = NSWorkspace.shared.menuBarOwningApplication ?? NSWorkspace.shared.frontmostApplication
+        if let app = app, app.bundleIdentifier != "com.dynamicbox.app" {
             let axApp = AXUIElementCreateApplication(app.processIdentifier)
             var menuBarValue: AnyObject?
             if AXUIElementCopyAttributeValue(axApp, kAXMenuBarAttribute as CFString, &menuBarValue) == .success {
@@ -327,6 +334,8 @@ class NotchPanel: NSPanel {
                 var childrenValue: AnyObject?
                 if AXUIElementCopyAttributeValue(menuBar, kAXChildrenAttribute as CFString, &childrenValue) == .success,
                    let children = childrenValue as? [AXUIElement] {
+                    var foundLeftMaxX: CGFloat = 0
+                    var foundRightMinX: CGFloat = screenFrame.width
                     for item in children {
                         var posValue: AnyObject?
                         var sizeValue: AnyObject?
@@ -337,11 +346,19 @@ class NotchPanel: NSPanel {
                         if let p = posValue as! AXValue?, AXValueGetValue(p, .cgPoint, &pos),
                            let s = sizeValue as! AXValue?, AXValueGetValue(s, .cgSize, &size) {
                             if pos.x < notchLeft {
-                                leftMenuMaxX = max(leftMenuMaxX, pos.x + size.width)
+                                foundLeftMaxX = max(foundLeftMaxX, pos.x + size.width)
                             } else if pos.x >= notchRight {
-                                rightMenuMinX = min(rightMenuMinX, pos.x)
+                                foundRightMinX = min(foundRightMinX, pos.x)
                             }
                         }
+                    }
+                    if foundLeftMaxX > 0 {
+                        leftMenuMaxX = foundLeftMaxX
+                        lastKnownLeftMenuMaxX = foundLeftMaxX
+                    }
+                    if foundRightMinX < screenFrame.width {
+                        rightMenuMinX = min(rightMenuMinX, foundRightMinX)
+                        lastKnownRightMenuMinX = foundRightMinX
                     }
                 }
             }
@@ -351,9 +368,12 @@ class NotchPanel: NSPanel {
         let rightBoundary = min(statusItemsMinX, rightMenuMinX)
         let safeRight = rightBoundary - notchRight
         
-        let isCurrentlySymmetric = (viewModel.wingMode == .symmetric)
-        let leftThreshold: CGFloat = isCurrentlySymmetric ? 60.0 : 74.0
-        let rightThreshold: CGFloat = isCurrentlySymmetric ? 60.0 : 74.0
+        let earWidth: CGFloat = viewModel.showChargingBanner ? 84.0 : 68.0
+        let leftIsCurrentlyActive = (viewModel.wingMode == .symmetric || viewModel.wingMode == .leftOnly)
+        let rightIsCurrentlyActive = (viewModel.wingMode == .symmetric || viewModel.wingMode == .rightOnly)
+        
+        let leftThreshold: CGFloat = leftIsCurrentlyActive ? (earWidth + 16.0) : (earWidth + 32.0)
+        let rightThreshold: CGFloat = rightIsCurrentlyActive ? (earWidth + 16.0) : (earWidth + 32.0)
         
         let leftIsSafe = safeLeft >= leftThreshold
         let rightIsSafe = safeRight >= rightThreshold
@@ -517,14 +537,6 @@ class NotchPanel: NSPanel {
                 if self?.viewModel.isExpanded == true {
                     self?.reposition(animated: true)
                 }
-            }
-            .store(in: &cancellables)
-            
-        viewModel.$isLiquidGlassEnabled
-            .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.reposition(animated: false)
             }
             .store(in: &cancellables)
     }

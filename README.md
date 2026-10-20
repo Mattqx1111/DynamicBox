@@ -21,18 +21,15 @@ Built with **100% native Swift, SwiftUI, and AppKit**, DynamicBox integrates sea
   - Built-in scratchpad tab in the notch hub.
   - Auto-saves instantly across reboots, with live word counter, one-click copy to clipboard, and quick clear.
 
-- 🔮 **Liquid Glass Material Effect**:
-  - Optional frosted liquid glass translucency with refractive specular border and background blur.
-  - Can be toggled on or off at any time in Preferences to switch between classic jet-black notch and modern Apple frosted glass aesthetic.
-
 - 🎵 **Universal Media Island**:
   - Live now-playing status for **Apple Music**, **Spotify**, **YouTube**, **Netflix**, and any browser/system audio output.
+  - Interactive **Song Like / Favorite Button (❤️)**: Like and favorite tracks directly from the island with real-time Apple Music sync (`favorited` / `loved`) and automatic persistence for Spotify and web audio.
   - Dynamic animated waveform with customizable colors (Orange Sunset, Cyber Cyan, Neon Green, Purple Pulse, Monochrome).
   - High-resolution album artwork fetched locally with async fallback.
   - Interactive scrub bar (drag or click to seek) and **-15s / +15s** quick-skip buttons.
 
 - 🪟 **Smart Notch Adaptation**:
-  - **Collision-Aware Wings**: Automatically detects long left menu items (like "Справка" / "Help") or crowded right-side status icons, dynamically adapting between Symmetric, Right-Only, Left-Only, and Flush modes.
+  - **Bidirectional Collision-Aware Wings**: Automatically detects crowded left application menus (File, Edit, Settings, Help) and right-side menu bar extras, dynamically adapting between Symmetric, Right-Only, Left-Only, and Flush modes to eliminate menu overlaps.
   - **Outer Island Toggle (👁️)**: Instant one-click toggle to hide the compact wings completely behind the physical MacBook notch (0 pixels protruding into the menu bar).
   - **Full-Screen Detection**: Automatically hides when watching videos or playing games in full-screen mode.
   - **Mission Control / Exposé Integration**: Hides during trackpad multi-finger app-switching gestures.

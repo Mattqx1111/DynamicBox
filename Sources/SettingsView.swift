@@ -65,13 +65,6 @@ struct InlineSettingsView: View {
                         }
                     }
                     
-                    Toggle(isOn: $viewModel.isLiquidGlassEnabled) {
-                        Text("Liquid Glass Effect")
-                            .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.85))
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: .cyan))
-                    
                     Toggle(isOn: Binding(
                         get: { !viewModel.isOuterPanelHidden },
                         set: { viewModel.isOuterPanelHidden = !$0 }
@@ -175,8 +168,6 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(header: Text("Dynamic Island & Notch").font(.headline)) {
-                Toggle("Liquid Glass Material Effect", isOn: $viewModel.isLiquidGlassEnabled)
-                
                 Toggle("Show Outer Island Wings (Compact Ears)", isOn: Binding(
                     get: { !viewModel.isOuterPanelHidden },
                     set: { viewModel.isOuterPanelHidden = !$0 }
