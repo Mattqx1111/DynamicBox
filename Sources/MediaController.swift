@@ -4,6 +4,7 @@ import CoreAudio
 class MediaController {
     static let shared = MediaController()
     
+    private typealias MRRegisterFunc = @convention(c) (DispatchQueue) -> Void
     private typealias MRGetNowPlayingInfoFunc = @convention(c) (DispatchQueue, @escaping ([String: Any]) -> Void) -> Void
     private typealias MRGetClientFunc = @convention(c) (DispatchQueue, @escaping (AnyObject?) -> Void) -> Void
     private typealias MRSendCommandFunc = @convention(c) (Int32, AnyObject?) -> Bool
@@ -22,6 +23,10 @@ class MediaController {
     
     init() {
         if let bundle = CFBundleCreate(kCFAllocatorDefault, NSURL(fileURLWithPath: "/System/Library/PrivateFrameworks/MediaRemote.framework")) {
+            if let regPtr = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteRegisterForNowPlayingNotifications" as CFString) {
+                let regFn = unsafeBitCast(regPtr, to: MRRegisterFunc.self)
+                regFn(DispatchQueue.main)
+            }
             if let ptr = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteGetNowPlayingInfo" as CFString) {
                 getInfoFunc = unsafeBitCast(ptr, to: MRGetNowPlayingInfoFunc.self)
             }
@@ -51,19 +56,6 @@ class MediaController {
             }
         }
         
-        if isAudioOutputRunningSomewhere() {
-            return MusicTrackInfo(
-                title: "Media Playback",
-                artist: "Audio Output",
-                album: "",
-                duration: 0,
-                position: 0,
-                isPlaying: true,
-                artwork: nil,
-                playerApp: "Audio"
-            )
-        }
-        
         return nil
     }
     
@@ -89,7 +81,7 @@ class MediaController {
                 let position = dict["kMRMediaRemoteNowPlayingInfoElapsedTime"] as? Double ?? 0.0
                 let isPlaying = (rate > 0.0)
                 
-                let trackKey = "\(title):\(artist)"
+                let trackKey = "\(title):\(artist)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 var art: NSImage? = nil
                 
                 if let cached = self.artworkCache[trackKey] {
@@ -124,7 +116,7 @@ class MediaController {
             sema.signal()
         }
         
-        _ = sema.wait(timeout: .now() + 0.15)
+        _ = sema.wait(timeout: .now() + 0.35)
         return result
     }
     
@@ -159,44 +151,6 @@ class MediaController {
             _ = sema.wait(timeout: .now() + 0.05)
         }
         return cachedClientName
-    }
-    
-    private func isAudioOutputRunningSomewhere() -> Bool {
-        var defaultOutputDeviceID = AudioDeviceID(0)
-        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultOutputDeviceID
-        )
-
-        guard status == noErr else { return false }
-
-        var isRunning: UInt32 = 0
-        var isRunningSize = UInt32(MemoryLayout<UInt32>.size)
-        var isRunningAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        let err = AudioObjectGetPropertyData(
-            defaultOutputDeviceID,
-            &isRunningAddress,
-            0,
-            nil,
-            &isRunningSize,
-            &isRunning
-        )
-        return err == noErr && isRunning != 0
     }
     
     private func isAppRunning(_ bundleID: String) -> Bool {
@@ -281,12 +235,19 @@ class MediaController {
         
         let isLiked = (parts.count >= 7 && parts[6].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "true")
         
-        let trackKey = "\(bundleID):\(title):\(artist)"
+        let trackKey = "\(title):\(artist)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let art: NSImage?
-        if trackKey == cachedTrackKey && cachedArtwork != nil {
-            art = cachedArtwork
+        if let cached = artworkCache[trackKey] {
+            art = cached
         } else {
-            art = fetchArtwork(forBundleID: bundleID, trackKey: trackKey)
+            let fetched = fetchArtwork(forBundleID: bundleID, trackKey: trackKey)
+            if let f = fetched {
+                artworkCache[trackKey] = f
+                art = f
+            } else {
+                fetchArtworkFromFallback(title: title, artist: artist, trackKey: trackKey)
+                art = nil
+            }
             cachedTrackKey = trackKey
             cachedArtwork = art
         }
@@ -375,28 +336,41 @@ class MediaController {
             URLQueryItem(name: "entity", value: "song"),
             URLQueryItem(name: "limit", value: "1")
         ]
-        guard let url = components?.url else { return }
+        guard let url = components?.url else {
+            pendingArtworkFetches.remove(trackKey)
+            return
+        }
         
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let self = self, let data = data,
+            guard let self = self else { return }
+            guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let results = json["results"] as? [[String: Any]],
                   let first = results.first,
                   let art100 = first["artworkUrl100"] as? String else {
+                DispatchQueue.main.async {
+                    self.pendingArtworkFetches.remove(trackKey)
+                }
                 return
             }
-            let artHighRes = art100.replacingOccurrences(of: "100x100bb", with: "300x300bb")
+            let artHighRes = art100.replacingOccurrences(of: "100x100bb", with: "600x600bb")
             if let imgUrl = URL(string: artHighRes),
                let scheme = imgUrl.scheme?.lowercased(),
                scheme == "http" || scheme == "https" {
                 URLSession.shared.dataTask(with: imgUrl) { [weak self] imgData, _, _ in
-                    guard let self = self, let imgData = imgData, let img = NSImage(data: imgData) else { return }
+                    guard let self = self else { return }
                     DispatchQueue.main.async {
-                        self.artworkCache[trackKey] = img
                         self.pendingArtworkFetches.remove(trackKey)
-                        self.onArtworkUpdated?(trackKey, img)
+                        if let imgData = imgData, let img = NSImage(data: imgData) {
+                            self.artworkCache[trackKey] = img
+                            self.onArtworkUpdated?(trackKey, img)
+                        }
                     }
                 }.resume()
+            } else {
+                DispatchQueue.main.async {
+                    self.pendingArtworkFetches.remove(trackKey)
+                }
             }
         }.resume()
     }

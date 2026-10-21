@@ -123,7 +123,7 @@ class NotchViewModel: ObservableObject {
         
         MediaController.shared.onArtworkUpdated = { [weak self] trackKey, image in
             guard let self = self, let current = self.currentTrack else { return }
-            let key = "\(current.title):\(current.artist)"
+            let key = "\(current.title):\(current.artist)".trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             if key == trackKey {
                 self.currentTrack?.artwork = image
             }
@@ -166,6 +166,9 @@ class NotchViewModel: ObservableObject {
                         }
                         if self.isScrubbingTrack, let existing = self.currentTrack {
                             updated.position = existing.position
+                        }
+                        if updated.artwork == nil, let existingArt = self.currentTrack?.artwork, self.currentTrack?.title == updated.title {
+                            updated.artwork = existingArt
                         }
                         self.currentTrack = updated
                     } else {
