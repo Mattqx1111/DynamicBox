@@ -176,7 +176,9 @@ struct FileCardView: View {
         )
         .onHover { isHovered = $0 }
         .onDrag {
-            NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+            let provider = NSItemProvider(object: item.url as NSURL)
+            provider.suggestedName = item.name
+            return provider
         }
         .onTapGesture(count: 2) {
             NSWorkspace.shared.open(item.url)
